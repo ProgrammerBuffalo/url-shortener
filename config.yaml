@@ -1,0 +1,12 @@
+http-server:
+  host: localhost
+  port: 1337
+  request-timeout: 5s
+  session-timeout: 60s
+data-source:
+  host: localhost
+  port: 6767
+  driver: postgres
+  username: sponge
+  password: bob
+  db-name: url-shortener
