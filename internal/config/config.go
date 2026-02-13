@@ -1,45 +1,49 @@
 package config
 
 import (
-	"os"
+	"log"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-type Conf struct {
-	Server     HttpServerConf `yaml:"http-server"`
-	DataSource DataSourceConf `yaml:"data-source"`
+type AppConfig struct {
+	Server     HttpServerConfig `yaml:"http-server"`
+	DataSource DataSourceConfig `yaml:"data-source"`
 }
 
-type HttpServerConf struct {
+type HttpServerConfig struct {
 	Host           string        `yaml:"host"`
 	Port           int           `yaml:"port"`
 	RequestTimeout time.Duration `yaml:"request-timeout"`
 	SessionTimeout time.Duration `yaml:"session-timeout"`
 }
 
-type DataSourceConf struct {
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	DBName   string `yaml:"db-name"`
-	DBHost   string `yaml:"host"`
-	DBPort   int    `yaml:"port"`
-	Driver   string `yaml:"driver"`
+type DataSourceConfig struct {
+	Url string `yaml:"url"`
 }
 
-func MustLoad() Conf {
-	configPath := os.Getenv("CONFIG")
+type MigratorConfig struct {
+	DataSource    DataSourceConfig `yaml:"data-source"`
+	MigrationPath MigrationPath    `yaml:"migrations"`
+}
 
-	if configPath == "" {
-		panic("Config path is empty")
+type MigrationPath struct {
+	Value string `yaml:"path"`
+}
+
+func LoadAppConfig(cfgPath string) *AppConfig {
+	var cfg AppConfig
+	if err := cleanenv.ReadConfig(cfgPath, &cfg); err != nil {
+		log.Fatal(err.Error())
 	}
+	return &cfg
+}
 
-	var cfg Conf
-
-	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
-		panic("Config couldn't read")
+func LoadMigrationConfig(cfgPath string) *MigratorConfig {
+	var cfg MigratorConfig
+	if err := cleanenv.ReadConfig(cfgPath, &cfg); err != nil {
+		log.Fatal(err.Error())
 	}
-
-	return cfg
+	return &cfg
 }

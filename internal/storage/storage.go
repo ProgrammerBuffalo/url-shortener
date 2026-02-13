@@ -11,8 +11,8 @@ type DataSource struct {
 	db *sql.DB
 }
 
-func New(dsConf config.DataSourceConf) (*DataSource, error) {
-	db, err := sql.Open(dsConf.Driver, getConnectionStr(&dsConf))
+func New(dsConf config.DataSourceConfig) (*DataSource, error) {
+	db, err := sql.Open("postgres", dsConf.Url)
 
 	if err != nil {
 		return nil, fmt.Errorf("Couldnt open connection to database: %w", err)
@@ -23,15 +23,4 @@ func New(dsConf config.DataSourceConf) (*DataSource, error) {
 	}
 
 	return &DataSource{db: db}, nil
-}
-
-func getConnectionStr(dsConf *config.DataSourceConf) string {
-	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		dsConf.Username,
-		dsConf.Password,
-		dsConf.DBHost,
-		dsConf.DBPort,
-		dsConf.DBName,
-	)
 }

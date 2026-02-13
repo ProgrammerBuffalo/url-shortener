@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log/slog"
 	"os"
 
@@ -15,13 +16,21 @@ func main() {
 
 	logger.Debug("Load config")
 
-	cfg := config.MustLoad()
+	cfgPath := flag.String("config", "", "Path to YAML config file")
+	flag.Parse()
+
+	if *cfgPath == "" {
+		logger.Error("Please provide --config flag")
+		os.Exit(1)
+	}
+
+	cfg := config.LoadAppConfig(*cfgPath)
 
 	logger.Debug("Load database")
 
 	if _, err := storage.New(cfg.DataSource); err != nil {
 		logger.Error("Database load failed", slog.String("error", err.Error()))
-		panic("Database error")
+		os.Exit(1)
 	}
 
 }

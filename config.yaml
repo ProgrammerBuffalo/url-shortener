@@ -4,9 +4,6 @@ http-server:
   request-timeout: 5s
   session-timeout: 60s
 data-source:
-  host: localhost
-  port: 6767
-  driver: postgres
-  username: sponge
-  password: bob
-  db-name: url-shortener
+  url: postgres://sponge:bob@localhost:6767/url-shortener?sslmode=disable
+migrations:
+  path: file://migrations
