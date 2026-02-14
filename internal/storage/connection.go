@@ -8,19 +8,19 @@ import (
 )
 
 type DataSource struct {
-	db *sql.DB
+	SqlDb *sql.DB
 }
 
 func New(dsConf config.DataSourceConfig) (*DataSource, error) {
 	db, err := sql.Open("postgres", dsConf.Url)
 
 	if err != nil {
-		return nil, fmt.Errorf("Couldnt open connection to database: %w", err)
+		return nil, fmt.Errorf("couldn't open connection to database: %w", err)
 	}
 
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("Couldnt ping to database: %w", err)
+		return nil, fmt.Errorf("couldn't ping to database: %w", err)
 	}
 
-	return &DataSource{db: db}, nil
+	return &DataSource{SqlDb: db}, nil
 }
