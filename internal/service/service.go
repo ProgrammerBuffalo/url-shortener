@@ -33,6 +33,9 @@ func (s *UrlService) FindByURL(ctx context.Context, shortUrl string) (string, er
 }
 
 func (s *UrlService) Create(ctx context.Context, longUrl string) (string, error) {
+	const op = "service.Create"
+	s.logger.With("op", op)
+
 	s.logger.Info("Call create url service")
 	id, err := uuid.NewRandom()
 
@@ -59,11 +62,26 @@ func (s *UrlService) Create(ctx context.Context, longUrl string) (string, error)
 		return "", errs.ErrInternalServer
 	}
 
+	s.logger.Info("Check long url existence")
+
+	isExists, err := s.r.ExistsTx(ctx, tx, longUrl)
+
+	if err != nil {
+		s.logger.Error("Check long url existence failed", slog.String("error", err.Error()))
+		return "", errs.ErrInternalServer
+	}
+
+	if isExists {
+		s.logger.Info("Long url existence, skip")
+		return "", errs.ErrDuplicateUrl
+	}
+
 	s.logger.Info("Create resource url service")
-	if err := s.r.Create(ctx, tx, &urlDao); err != nil {
+	if err := s.r.CreateTx(ctx, tx, &urlDao); err != nil {
 		if err := tx.Rollback(); err != nil {
 			s.logger.Error("Transaction rollback failed url service", slog.String("error", err.Error()))
 		}
+		s.logger.Error("Creation failed is url service", slog.String("error", err.Error()))
 		return "", errs.ErrInternalServer
 	}
 

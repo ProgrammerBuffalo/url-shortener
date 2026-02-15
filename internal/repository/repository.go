@@ -17,7 +17,8 @@ const (
 )
 
 type Repository interface {
-	Create(ctx context.Context, tx *sql.Tx, dao *model.UrlDao) error
+	CreateTx(ctx context.Context, tx *sql.Tx, dao *model.UrlDao) error
+	ExistsTx(ctx context.Context, tx *sql.Tx, shortUrl string) (bool, error)
 	Read(ctx context.Context, shortUrl string) (string, error)
 }
 
@@ -29,17 +30,17 @@ func NewUrlRepository(ds *storage.DataSource) *UrlRepository {
 	return &UrlRepository{ds: ds}
 }
 
-func (r *UrlRepository) Create(ctx context.Context, tx *sql.Tx, dao *model.UrlDao) error {
+func (r *UrlRepository) CreateTx(ctx context.Context, tx *sql.Tx, dao *model.UrlDao) error {
 	_, err := tx.ExecContext(
 		ctx,
-		"INSERT INTO urls(id, long_url, short_url) VALUES ($1, $2, $3)",
+		"INSERT INTO url(id, long_url, short_url) VALUES ($1, $2, $3)",
 		dao.Id, dao.Long, dao.Short)
 
 	if err != nil {
 		if isUniqueViolation(err) {
 			return fmt.Errorf("db error: %w", errs.ErrDuplicateUrl)
 		}
-		return fmt.Errorf("db error: %w", errs.ErrInternalServer)
+		return fmt.Errorf("db error: %w", err)
 	}
 
 	return nil
@@ -47,7 +48,7 @@ func (r *UrlRepository) Create(ctx context.Context, tx *sql.Tx, dao *model.UrlDa
 
 func (r *UrlRepository) Read(ctx context.Context, shortUrl string) (string, error) {
 	var url string
-	err := r.ds.SqlDb.QueryRowContext(ctx, "SELECT short_url FROM urls WHERE short_url = $1", shortUrl).Scan(&url)
+	err := r.ds.SqlDb.QueryRowContext(ctx, "SELECT short_url FROM url WHERE short_url = $1", shortUrl).Scan(&url)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -57,6 +58,17 @@ func (r *UrlRepository) Read(ctx context.Context, shortUrl string) (string, erro
 	}
 
 	return url, nil
+}
+
+func (r *UrlRepository) ExistsTx(ctx context.Context, tx *sql.Tx, longUrl string) (bool, error) {
+	var exists int
+	if err := tx.QueryRowContext(ctx, "SELECT 1 FROM url WHERE long_url = $1", longUrl).Scan(&exists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, fmt.Errorf("db error: %w", errs.ErrInternalServer)
+	}
+	return exists > 0, nil
 }
 
 func isUniqueViolation(err error) bool {
